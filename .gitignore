@@ -1,0 +1,26 @@
+# ============================================
+# Dependências (não devem ir para o Git — são reconstruídas com npm/composer install)
+# ============================================
+node_modules/
+vendor/
+
+# ============================================
+# Angular / Frontend
+# ============================================
+frontend/.angular/
+frontend/dist/
+frontend/.vscode/
+frontend/*.log
+
+# ============================================
+# PHP / Backend
+# ============================================
+backend/.env
+
+# ============================================
+# Sistema Operativo / Editor
+# ============================================
+.DS_Store
+Thumbs.db
+*.log
+.idea/

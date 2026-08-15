@@ -1,0 +1,17 @@
+<nav class="navbar navbar-dark bg-dark px-3">
+  <span class="navbar-brand mb-0 h1">🔧 Oficina — Dashboard</span>
+  <button class="btn btn-outline-light btn-sm" (click)="logout()">Sair</button>
+</nav>
+
+<div class="container mt-4">
+  @if (authService.currentUser(); as user) {
+    <div class="alert alert-success">
+      Bem-vindo, <strong>{{ user.name }}</strong>! Sessão iniciada como <strong>{{ user.role }}</strong>.
+    </div>
+  }
+
+  <p class="text-muted">
+    Isto é um placeholder. Os próximos módulos (utilizadores, veículos, peças, manutenção)
+    vão preencher este dashboard com estatísticas reais.
+  </p>
+</div>

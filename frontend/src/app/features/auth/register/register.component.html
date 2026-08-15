@@ -1,0 +1,90 @@
+<div class="d-flex justify-content-center align-items-center min-vh-100 bg-light">
+  <div class="card shadow-sm p-4" style="width: 100%; max-width: 400px;">
+    <div class="text-center mb-4">
+      <h2 class="fw-bold">🔧 Oficina</h2>
+      <p class="text-muted">Cria a tua conta</p>
+    </div>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+
+      @if (errorMessage) {
+        <div class="alert alert-danger py-2" role="alert">
+          {{ errorMessage }}
+        </div>
+      }
+
+      @if (successMessage) {
+        <div class="alert alert-success py-2" role="alert">
+          {{ successMessage }}
+        </div>
+      }
+
+      <div class="mb-3">
+        <label for="name" class="form-label">Nome</label>
+        <input
+          type="text"
+          id="name"
+          class="form-control"
+          formControlName="name"
+          [class.is-invalid]="name?.invalid && name?.touched"
+          placeholder="O teu nome">
+
+        @if (name?.invalid && name?.touched) {
+          <div class="invalid-feedback">
+            Nome é obrigatório (mínimo 2 caracteres).
+          </div>
+        }
+      </div>
+
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input
+          type="email"
+          id="email"
+          class="form-control"
+          formControlName="email"
+          [class.is-invalid]="email?.invalid && email?.touched"
+          placeholder="nome@exemplo.com">
+
+        @if (email?.invalid && email?.touched) {
+          <div class="invalid-feedback">
+            @if (email?.errors?.['required']) {
+              Email é obrigatório.
+            } @else if (email?.errors?.['email']) {
+              Introduz um email válido.
+            }
+          </div>
+        }
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input
+          type="password"
+          id="password"
+          class="form-control"
+          formControlName="password"
+          [class.is-invalid]="password?.invalid && password?.touched"
+          placeholder="Mínimo 6 caracteres">
+
+        @if (password?.invalid && password?.touched) {
+          <div class="invalid-feedback">
+            A password deve ter pelo menos 6 caracteres.
+          </div>
+        }
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100" [disabled]="isLoading">
+        @if (isLoading) {
+          <span class="spinner-border spinner-border-sm me-2"></span> A criar conta...
+        } @else {
+          Criar conta
+        }
+      </button>
+
+      <div class="text-center mt-3">
+        <a routerLink="/login" class="text-decoration-none">Já tens conta? Inicia sessão</a>
+      </div>
+    </form>
+  </div>
+</div>
