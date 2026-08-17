@@ -1,11 +1,7 @@
 <?php
 /**
  * Funções auxiliares para criar e validar tokens JWT.
- *
- * Um JWT tem 3 partes separadas por pontos: header.payload.signature
- * - O "payload" contém dados sobre o utilizador (ex: id, role) — não é secreto,
- *   qualquer pessoa consegue ler o conteúdo (não é encriptado, só assinado).
- * - A "signature" garante que ninguém alterou o conteúdo sem saber a nossa chave secreta.
+ * A chave secreta e o tempo de expiração vêm do ficheiro .env.
  */
 
 use Firebase\JWT\JWT;
@@ -13,20 +9,26 @@ use Firebase\JWT\Key;
 
 class JwtHelper
 {
-    // Em produção, isto devia vir de uma variável de ambiente (.env), nunca escrito diretamente no código.
-    // Para o projeto de aprendizagem, mantemos aqui, mas fica o aviso.
-    private static string $secretKey = "oficina_chave_secreta_troca_isto_em_producao";
+    private static function getSecretKey(): string
+    {
+        return $_ENV['JWT_SECRET'] ?? 'chave_por_defeito_insegura';
+    }
+
+    private static function getExpirationSeconds(): int
+    {
+        return (int) ($_ENV['JWT_EXPIRATION_SECONDS'] ?? 3600 * 8);
+    }
+
     private static string $algorithm = "HS256";
-    private static int $expirationSeconds = 3600 * 8; // token válido por 8 horas
 
     public static function generateToken(array $userData): string
     {
         $issuedAt = time();
-        $expire = $issuedAt + self::$expirationSeconds;
+        $expire = $issuedAt + self::getExpirationSeconds();
 
         $payload = [
-            "iat" => $issuedAt,   // issued at (quando foi criado)
-            "exp" => $expire,     // expiration (quando expira)
+            "iat" => $issuedAt,
+            "exp" => $expire,
             "data" => [
                 "id" => $userData['id'],
                 "name" => $userData['name'],
@@ -35,25 +37,19 @@ class JwtHelper
             ]
         ];
 
-        return JWT::encode($payload, self::$secretKey, self::$algorithm);
+        return JWT::encode($payload, self::getSecretKey(), self::$algorithm);
     }
 
-    /**
-     * Valida o token e devolve os dados do utilizador, ou null se for inválido/expirado.
-     */
     public static function validateToken(string $token): ?array
     {
         try {
-            $decoded = JWT::decode($token, new Key(self::$secretKey, self::$algorithm));
+            $decoded = JWT::decode($token, new Key(self::getSecretKey(), self::$algorithm));
             return (array) $decoded->data;
         } catch (Exception $e) {
             return null;
         }
     }
 
-    /**
-     * Extrai o token do cabeçalho "Authorization: Bearer <token>"
-     */
     public static function getTokenFromHeader(): ?string
     {
         $headers = getallheaders();

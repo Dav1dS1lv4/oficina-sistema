@@ -10,8 +10,11 @@
     </div>
   }
 
-  <p class="text-muted">
-    Isto é um placeholder. Os próximos módulos (utilizadores, veículos, peças, manutenção)
-    vão preencher este dashboard com estatísticas reais.
+  @if (authService.currentUser()?.role === 'Administrador') {
+    <a routerLink="/users" class="btn btn-primary">Gerir Utilizadores</a>
+  }
+
+  <p class="text-muted mt-3">
+    Os próximos módulos (veículos, peças, manutenção) vão preencher este dashboard com estatísticas reais.
   </p>
 </div>
