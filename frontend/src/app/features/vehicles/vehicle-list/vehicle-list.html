@@ -1,0 +1,174 @@
+<nav class="navbar navbar-dark bg-dark px-3">
+  <span class="navbar-brand mb-0 h1">🔧 Oficina</span>
+  <div>
+    <a routerLink="/dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+    <button class="btn btn-outline-light btn-sm" (click)="authService.logout()">Sair</button>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Gestão de Veículos</h3>
+    @if (canManage()) {
+      <button class="btn btn-primary" (click)="openCreateModal()">+ Novo Veículo</button>
+    }
+  </div>
+
+  <div class="input-group mb-3" style="max-width: 400px;">
+    <input
+      type="text"
+      class="form-control"
+      placeholder="Pesquisar por matrícula, marca, modelo ou cliente..."
+      [value]="searchTerm()"
+      (input)="searchTerm.set($any($event.target).value)"
+      (keyup.enter)="onSearch()">
+    <button class="btn btn-outline-secondary" (click)="onSearch()">Pesquisar</button>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">{{ errorMessage() }}</div>
+  }
+
+  @if (isLoading()) {
+    <div class="text-center my-4">
+      <span class="spinner-border"></span>
+    </div>
+  } @else {
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Matrícula</th>
+          <th>Marca</th>
+          <th>Modelo</th>
+          <th>Ano</th>
+          <th>Cliente</th>
+          <th>Registado por</th>
+          @if (canManage()) {
+            <th class="text-end">Ações</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (vehicle of vehicles(); track vehicle.id) {
+          <tr>
+            <td><strong>{{ vehicle.license_plate }}</strong></td>
+            <td>{{ vehicle.brand }}</td>
+            <td>{{ vehicle.model }}</td>
+            <td>{{ vehicle.year }}</td>
+            <td>{{ vehicle.client_name }}</td>
+            <td class="text-muted">{{ vehicle.created_by_name || '—' }}</td>
+            @if (canManage()) {
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-secondary me-1" (click)="openEditModal(vehicle)">Editar</button>
+                <button class="btn btn-sm btn-outline-danger" (click)="deleteVehicle(vehicle)">Remover</button>
+              </td>
+            }
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">Nenhum veículo encontrado.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    @if (totalPages() > 1) {
+      <nav>
+        <ul class="pagination">
+          @for (page of [].constructor(totalPages()); track $index) {
+            <li class="page-item" [class.active]="currentPage() === $index + 1">
+              <button class="page-link" (click)="goToPage($index + 1)">{{ $index + 1 }}</button>
+            </li>
+          }
+        </ul>
+      </nav>
+    }
+  }
+</div>
+
+<!-- Modal Criar/Editar -->
+@if (showModal()) {
+  <div class="modal-backdrop-custom" (click)="closeModal()">
+    <div class="modal-content-custom" (click)="$event.stopPropagation()">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5>{{ isEditMode() ? 'Editar Veículo' : 'Novo Veículo' }}</h5>
+        <button class="btn-close" (click)="closeModal()"></button>
+      </div>
+
+      <form [formGroup]="vehicleForm" (ngSubmit)="onSubmitForm()">
+        @if (modalErrorMessage()) {
+          <div class="alert alert-danger py-2">{{ modalErrorMessage() }}</div>
+        }
+
+        <div class="mb-3">
+          <label class="form-label">Matrícula</label>
+          <input type="text" class="form-control" formControlName="license_plate"
+            placeholder="AA-00-AA"
+            [class.is-invalid]="license_plate?.invalid && license_plate?.touched">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Marca</label>
+          <input type="text" class="form-control" formControlName="brand"
+            [class.is-invalid]="brand?.invalid && brand?.touched">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Modelo</label>
+          <input type="text" class="form-control" formControlName="model"
+            [class.is-invalid]="model?.invalid && model?.touched">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Ano</label>
+          <input type="number" class="form-control" formControlName="year"
+            [class.is-invalid]="year?.invalid && year?.touched">
+        </div>
+
+       <div class="mb-3 position-relative">
+  <label class="form-label">Cliente</label>
+  <input
+    type="text"
+    class="form-control"
+    placeholder="Escreve o nome ou NIF do cliente..."
+    [value]="clientSearchTerm()"
+    (input)="onClientInputChange($any($event.target).value)"
+    (focus)="onClientInputFocus()"
+    (blur)="onClientInputBlur()"
+    [class.is-invalid]="client_id?.invalid && client_id?.touched"
+    autocomplete="off">
+
+  @if (showClientDropdown() && filteredClients().length > 0) {
+    <ul class="list-group position-absolute w-100 shadow-sm" style="z-index: 1060; max-height: 200px; overflow-y: auto;">
+      @for (client of filteredClients(); track client.id) {
+        <li class="list-group-item list-group-item-action" style="cursor: pointer;" (click)="selectClient(client)">
+          <strong>{{ client.name }}</strong>
+          @if (client.nif) {
+            <span class="text-muted"> — NIF: {{ client.nif }}</span>
+          }
+        </li>
+      }
+    </ul>
+  }
+
+  @if (client_id?.invalid && client_id?.touched) {
+    <div class="invalid-feedback d-block">
+      Seleciona um cliente da lista.
+    </div>
+  }
+
+  @if (clients().length === 0) {
+    <div class="form-text text-warning">
+      Não há clientes registados. Cria um cliente primeiro.
+    </div>
+  }
+</div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">{{ isEditMode() ? 'Guardar' : 'Criar' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

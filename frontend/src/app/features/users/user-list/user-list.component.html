@@ -38,6 +38,7 @@
         <tr>
           <th>Nome</th>
           <th>Email</th>
+          <th>NIF</th>
           <th>Role</th>
           <th>Estado</th>
           <th class="text-end">Ações</th>
@@ -48,6 +49,7 @@
           <tr>
             <td>{{ user.name }}</td>
             <td>{{ user.email }}</td>
+            <td>{{ user.nif || '—' }}</td>
             <td>
               <span class="badge"
                 [class.bg-primary]="user.role_name === 'Administrador'"
@@ -115,9 +117,14 @@
         </div>
 
         <div class="mb-3">
-          <label class="form-label">Email</label>
-          <input type="email" class="form-control" formControlName="email"
-            [class.is-invalid]="email?.invalid && email?.touched">
+     <label class="form-label">Email</label>
+      <input type="email" class="form-control" formControlName="email"
+     [class.is-invalid]="email?.invalid && email?.touched">
+      </div>
+
+      <div class="mb-3">
+       <label class="form-label">NIF <span class="text-muted">(opcional)</span></label>
+        <input type="text" class="form-control" formControlName="nif" placeholder="123456789" maxlength="9">
         </div>
 
         <div class="mb-3">

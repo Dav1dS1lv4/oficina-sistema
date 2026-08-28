@@ -7,6 +7,7 @@ export interface OficinaUser {
   id: number;
   name: string;
   email: string;
+  nif: string | null;
   active: number;
   role_id: number;
   role_name: string;
@@ -39,11 +40,11 @@ export class UserService {
     return this.http.get<PaginatedUsers>(url);
   }
 
-  createUser(data: { name: string; email: string; password: string; role_id: number }): Observable<any> {
+  createUser(data: { name: string; email: string; password: string; role_id: number; nif?: string }): Observable<any> {
     return this.http.post(this.apiUrl, data);
   }
 
-  updateUser(id: number, data: { name: string; email: string; role_id: number; password?: string }): Observable<any> {
+  updateUser(id: number, data: { name: string; email: string; role_id: number; password?: string; nif?: string }): Observable<any> {
     return this.http.put(`${this.apiUrl}/${id}`, data);
   }
 

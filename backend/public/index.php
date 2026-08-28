@@ -22,6 +22,9 @@ $dotenv->load();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../src/controllers/AuthController.php';
 require_once __DIR__ . '/../src/controllers/UserController.php';
+require_once __DIR__ . '/../src/controllers/ClientController.php';
+require_once __DIR__ . '/../src/controllers/VehicleController.php';
+require_once __DIR__ . '/../src/controllers/PartController.php';
 
 $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $basePath = '/oficina-backend';
@@ -36,58 +39,51 @@ $conn = $db->connect();
 
 $authController = new AuthController($conn);
 $userController = new UserController($conn);
+$clientController = new ClientController($conn);
+$vehicleController = new VehicleController($conn);
+$partController = new PartController($conn);
+
+// ============================================
+// ROTEAMENTO
+// ============================================
 
 // --- Autenticação ---
-if ($route === 'api/auth/register' && $method === 'POST') {
-    $authController->register($input);
-    exit;
-}
-if ($route === 'api/auth/login' && $method === 'POST') {
-    $authController->login($input);
-    exit;
-}
-if ($route === 'api/auth/logout' && $method === 'POST') {
-    $authController->logout();
-    exit;
-}
-if ($route === 'api/auth/forgot-password' && $method === 'POST') {
-    $authController->forgotPassword($input);
-    exit;
-}
-if ($route === 'api/auth/reset-password' && $method === 'POST') {
-    $authController->resetPassword($input);
-    exit;
-}
-if ($route === 'api/auth/me' && $method === 'GET') {
-    $authController->me();
-    exit;
-}
+if ($route === 'api/auth/register' && $method === 'POST') { $authController->register($input); exit; }
+if ($route === 'api/auth/login' && $method === 'POST') { $authController->login($input); exit; }
+if ($route === 'api/auth/logout' && $method === 'POST') { $authController->logout(); exit; }
+if ($route === 'api/auth/forgot-password' && $method === 'POST') { $authController->forgotPassword($input); exit; }
+if ($route === 'api/auth/reset-password' && $method === 'POST') { $authController->resetPassword($input); exit; }
+if ($route === 'api/auth/me' && $method === 'GET') { $authController->me(); exit; }
 
 // --- Utilizadores (Módulo 2) ---
-if ($route === 'api/users' && $method === 'GET') {
-    $userController->index();
-    exit;
-}
-if ($route === 'api/users' && $method === 'POST') {
-    $userController->store($input);
-    exit;
-}
-if (preg_match('#^api/users/(\d+)$#', $route, $matches) && $method === 'GET') {
-    $userController->show((int)$matches[1]);
-    exit;
-}
-if (preg_match('#^api/users/(\d+)$#', $route, $matches) && $method === 'PUT') {
-    $userController->update((int)$matches[1], $input);
-    exit;
-}
-if (preg_match('#^api/users/(\d+)/toggle-active$#', $route, $matches) && $method === 'PATCH') {
-    $userController->toggleActive((int)$matches[1]);
-    exit;
-}
-if (preg_match('#^api/users/(\d+)$#', $route, $matches) && $method === 'DELETE') {
-    $userController->destroy((int)$matches[1]);
-    exit;
-}
+if ($route === 'api/users' && $method === 'GET') { $userController->index(); exit; }
+if ($route === 'api/users' && $method === 'POST') { $userController->store($input); exit; }
+if (preg_match('#^api/users/(\d+)$#', $route, $m) && $method === 'GET') { $userController->show((int)$m[1]); exit; }
+if (preg_match('#^api/users/(\d+)$#', $route, $m) && $method === 'PUT') { $userController->update((int)$m[1], $input); exit; }
+if (preg_match('#^api/users/(\d+)/toggle-active$#', $route, $m) && $method === 'PATCH') { $userController->toggleActive((int)$m[1]); exit; }
+if (preg_match('#^api/users/(\d+)$#', $route, $m) && $method === 'DELETE') { $userController->destroy((int)$m[1]); exit; }
 
+// --- Clientes (Módulo 3) ---
+if ($route === 'api/clients' && $method === 'GET') { $clientController->index(); exit; }
+if ($route === 'api/clients' && $method === 'POST') { $clientController->store($input); exit; }
+if (preg_match('#^api/clients/(\d+)$#', $route, $m) && $method === 'GET') { $clientController->show((int)$m[1]); exit; }
+if (preg_match('#^api/clients/(\d+)$#', $route, $m) && $method === 'PUT') { $clientController->update((int)$m[1], $input); exit; }
+if (preg_match('#^api/clients/(\d+)$#', $route, $m) && $method === 'DELETE') { $clientController->destroy((int)$m[1]); exit; }
+
+// --- Veículos (Módulo 3) ---
+if ($route === 'api/vehicles' && $method === 'GET') { $vehicleController->index(); exit; }
+if ($route === 'api/vehicles' && $method === 'POST') { $vehicleController->store($input); exit; }
+if (preg_match('#^api/vehicles/(\d+)$#', $route, $m) && $method === 'GET') { $vehicleController->show((int)$m[1]); exit; }
+if (preg_match('#^api/vehicles/(\d+)$#', $route, $m) && $method === 'PUT') { $vehicleController->update((int)$m[1], $input); exit; }
+if (preg_match('#^api/vehicles/(\d+)$#', $route, $m) && $method === 'DELETE') { $vehicleController->destroy((int)$m[1]); exit; }
+
+// --- Peças (Módulo 4) ---
+if ($route === 'api/parts' && $method === 'GET') { $partController->index(); exit; }
+if ($route === 'api/parts' && $method === 'POST') { $partController->store($input); exit; }
+if (preg_match('#^api/parts/(\d+)$#', $route, $m) && $method === 'GET') { $partController->show((int)$m[1]); exit; }
+if (preg_match('#^api/parts/(\d+)$#', $route, $m) && $method === 'PUT') { $partController->update((int)$m[1], $input); exit; }
+if (preg_match('#^api/parts/(\d+)$#', $route, $m) && $method === 'DELETE') { $partController->destroy((int)$m[1]); exit; }
+
+// --- Rota não encontrada ---
 http_response_code(404);
 echo json_encode(["error" => "Rota não encontrada: $route"]);

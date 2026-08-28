@@ -61,6 +61,7 @@ class UserController
         $email = trim(strtolower($input['email'] ?? ''));
         $password = $input['password'] ?? '';
         $roleId = (int) ($input['role_id'] ?? 0);
+        $nif = trim($input['nif'] ?? '') ?: null;
 
         if ($name === '' || $email === '' || $password === '' || $roleId === 0) {
             $this->respond(422, ["error" => "Nome, email, password e role são obrigatórios."]);
@@ -82,13 +83,23 @@ class UserController
             return;
         }
 
+        if ($nif !== null && !preg_match('/^\d{9}$/', $nif)) {
+            $this->respond(422, ["error" => "O NIF deve ter exatamente 9 dígitos."]);
+            return;
+        }
+
         if ($this->userModel->emailExists($email)) {
             $this->respond(409, ["error" => "Já existe uma conta com este email."]);
             return;
         }
 
+        if ($nif !== null && $this->userModel->nifExists($nif)) {
+            $this->respond(409, ["error" => "Já existe um utilizador com este NIF."]);
+            return;
+        }
+
         $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
-        $newUserId = $this->userModel->create($name, $email, $hashedPassword, $roleId);
+        $newUserId = $this->userModel->create($name, $email, $hashedPassword, $roleId, $nif);
 
         $this->respond(201, [
             "message" => "Utilizador criado com sucesso.",
@@ -96,7 +107,7 @@ class UserController
         ]);
     }
 
-    public function update(int $id, array $input): void
+   public function update(int $id, array $input): void
     {
         $currentUser = AuthMiddleware::authorize(['Administrador']);
 
@@ -109,6 +120,7 @@ class UserController
         $name = trim($input['name'] ?? '');
         $email = trim(strtolower($input['email'] ?? ''));
         $roleId = (int) ($input['role_id'] ?? 0);
+        $nif = trim($input['nif'] ?? '') ?: null;
 
         if ($name === '' || $email === '' || $roleId === 0) {
             $this->respond(422, ["error" => "Nome, email e role são obrigatórios."]);
@@ -125,6 +137,11 @@ class UserController
             return;
         }
 
+        if ($nif !== null && !preg_match('/^\d{9}$/', $nif)) {
+            $this->respond(422, ["error" => "O NIF deve ter exatamente 9 dígitos."]);
+            return;
+        }
+
         if ((int)$currentUser['id'] === $id && $roleId !== 1) {
             $this->respond(400, ["error" => "Não podes remover a tua própria permissão de Administrador."]);
             return;
@@ -135,7 +152,12 @@ class UserController
             return;
         }
 
-        $this->userModel->update($id, $name, $email, $roleId);
+        if ($nif !== null && $this->userModel->nifExists($nif, $id)) {
+            $this->respond(409, ["error" => "Já existe outro utilizador com este NIF."]);
+            return;
+        }
+
+        $this->userModel->update($id, $name, $email, $roleId, $nif);
 
         if (!empty($input['password'])) {
             if (strlen($input['password']) < 6) {

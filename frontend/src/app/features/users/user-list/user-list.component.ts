@@ -34,12 +34,13 @@ export class UserListComponent implements OnInit {
     private router: Router,
     private fb: FormBuilder
   ) {
-    this.userForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2)]],
-      email: ['', [Validators.required, Validators.email]],
-      password: [''], // obrigatório só ao criar, tratado manualmente
-      role_id: [3, Validators.required]
-    });
+   this.userForm = this.fb.group({
+  name: ['', [Validators.required, Validators.minLength(2)]],
+  email: ['', [Validators.required, Validators.email]],
+  password: [''],
+  role_id: [3, Validators.required],
+  nif: ['']
+});
   }
 
   ngOnInit(): void {
@@ -91,11 +92,12 @@ export class UserListComponent implements OnInit {
     this.editingUserId = user.id;
     this.modalErrorMessage.set('');
     this.userForm.reset({
-      name: user.name,
-      email: user.email,
-      role_id: user.role_id,
-      password: ''
-    });
+  name: user.name,
+  email: user.email,
+  role_id: user.role_id,
+  password: '',
+  nif: user.nif || ''
+});
     // Na edição, a password é opcional (só muda se preenchida)
     this.userForm.get('password')?.clearValidators();
     this.userForm.get('password')?.updateValueAndValidity();
@@ -118,7 +120,8 @@ export class UserListComponent implements OnInit {
       const payload: any = {
         name: formValue.name,
         email: formValue.email,
-        role_id: Number(formValue.role_id)
+        role_id: Number(formValue.role_id),
+        nif: formValue.nif || undefined
       };
       if (formValue.password) {
         payload.password = formValue.password;
@@ -138,7 +141,8 @@ export class UserListComponent implements OnInit {
         name: formValue.name,
         email: formValue.email,
         password: formValue.password,
-        role_id: Number(formValue.role_id)
+        role_id: Number(formValue.role_id),
+        nif:formValue.nif || undefined
       }).subscribe({
         next: () => {
           this.showModal.set(false);

@@ -31,7 +31,7 @@ class User
 
     public function findById(int $id): ?array
     {
-        $query = "SELECT u.id, u.name, u.email, u.active, u.role_id, r.name AS role_name, u.created_at
+        $query = "SELECT u.id, u.name, u.email, u.nif, u.active, u.role_id, r.name AS role_name, u.created_at
                   FROM {$this->table} u
                   JOIN roles r ON r.id = u.role_id
                   WHERE u.id = :id
@@ -53,11 +53,11 @@ class User
         $params = [];
 
         if ($search !== '') {
-            $whereClause = "WHERE u.name LIKE :search OR u.email LIKE :search";
+            $whereClause = "WHERE u.name LIKE :search OR u.email LIKE :search OR u.nif LIKE :search";
             $params[':search'] = "%{$search}%";
         }
 
-        $query = "SELECT u.id, u.name, u.email, u.active, u.role_id, r.name AS role_name, u.created_at
+        $query = "SELECT u.id, u.name, u.email, u.nif, u.active, u.role_id, r.name AS role_name, u.created_at
                   FROM {$this->table} u
                   JOIN roles r ON r.id = u.role_id
                   {$whereClause}
@@ -81,7 +81,7 @@ class User
         $params = [];
 
         if ($search !== '') {
-            $whereClause = "WHERE name LIKE :search OR email LIKE :search";
+            $whereClause = "WHERE name LIKE :search OR email LIKE :search OR nif LIKE :search";
             $params[':search'] = "%{$search}%";
         }
 
@@ -95,31 +95,33 @@ class User
         return (int) $stmt->fetch()['total'];
     }
 
-    public function create(string $name, string $email, string $hashedPassword, int $roleId): int
+    public function create(string $name, string $email, string $hashedPassword, int $roleId, ?string $nif = null): int
     {
-        $query = "INSERT INTO {$this->table} (name, email, password, role_id)
-                  VALUES (:name, :email, :password, :role_id)";
+        $query = "INSERT INTO {$this->table} (name, email, password, role_id, nif)
+                  VALUES (:name, :email, :password, :role_id, :nif)";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':name', $name);
         $stmt->bindParam(':email', $email);
         $stmt->bindParam(':password', $hashedPassword);
         $stmt->bindParam(':role_id', $roleId, PDO::PARAM_INT);
+        $stmt->bindParam(':nif', $nif);
         $stmt->execute();
 
         return (int) $this->conn->lastInsertId();
     }
 
-    public function update(int $id, string $name, string $email, int $roleId): bool
+    public function update(int $id, string $name, string $email, int $roleId, ?string $nif = null): bool
     {
         $query = "UPDATE {$this->table}
-                  SET name = :name, email = :email, role_id = :role_id
+                  SET name = :name, email = :email, role_id = :role_id, nif = :nif
                   WHERE id = :id";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':name', $name);
         $stmt->bindParam(':email', $email);
         $stmt->bindParam(':role_id', $roleId, PDO::PARAM_INT);
+        $stmt->bindParam(':nif', $nif);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
 
         return $stmt->execute();
@@ -203,6 +205,26 @@ class User
             $params[':excludeId'] = $excludeId;
         }
 
+        $query .= " LIMIT 1";
+
+        $stmt = $this->conn->prepare($query);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->execute();
+
+        return $stmt->fetch() !== false;
+    }
+
+    public function nifExists(string $nif, ?int $excludeId = null): bool
+    {
+        $query = "SELECT id FROM {$this->table} WHERE nif = :nif";
+        $params = [':nif' => $nif];
+
+        if ($excludeId !== null) {
+            $query .= " AND id != :excludeId";
+            $params[':excludeId'] = $excludeId;
+        }
         $query .= " LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
