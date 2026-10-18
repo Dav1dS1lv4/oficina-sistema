@@ -7,6 +7,9 @@ import { VehicleList } from './features/vehicles/vehicle-list/vehicle-list';
 import { PartList } from './features/parts/part-list/part-list';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
+import { MaintenanceList } from './features/maintenance/maintenance-list/maintenance-list';
+import { ClientList } from './features/clients/client-list/client-list';
+import { PaymentPage } from './features/payments/payment-page/payment-page';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -16,4 +19,8 @@ export const routes: Routes = [
   { path: 'users', component: UserListComponent, canActivate: [authGuard, adminGuard] },
   { path: 'vehicles', component: VehicleList, canActivate: [authGuard] },
   { path: 'parts', component: PartList, canActivate: [authGuard] },
+  { path: 'maintenance', component: MaintenanceList, canActivate: [authGuard] },
+    { path: 'clients', component: ClientList, canActivate: [authGuard] },
+      { path: 'payments', component: PaymentPage, canActivate: [authGuard] },
+  { path: 'payments/:reference', component: PaymentPage, canActivate: [authGuard] },
 ];

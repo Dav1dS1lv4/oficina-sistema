@@ -1,0 +1,53 @@
+.invoice-sheet {
+  position: relative;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 32px;
+  overflow: hidden;
+}
+
+/* Selo diagonal das faturas anuladas */
+.void-stamp {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-20deg);
+  font-size: 5rem;
+  font-weight: 800;
+  letter-spacing: 0.5rem;
+  color: rgba(220, 53, 69, 0.3);
+  border: 0.5rem solid rgba(220, 53, 69, 0.3);
+  border-radius: 0.75rem;
+  padding: 0 1.5rem;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+@page {
+  margin: 14mm;
+}
+
+/* Na impressão só fica a fatura, sem menus, botões nem lista */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .invoice-col {
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .invoice-sheet {
+    border: none;
+    padding: 0;
+  }
+
+  .void-stamp {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

@@ -62,6 +62,17 @@ class Part
         return $part ?: null;
     }
 
+    public function findByExactName(string $name): ?array
+    {
+        $query = "SELECT * FROM {$this->table} WHERE LOWER(name) = LOWER(:name) LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':name', $name);
+        $stmt->execute();
+
+        $part = $stmt->fetch();
+        return $part ?: null;
+    }
+
     public function create(string $name, ?string $category, int $quantity, float $price, ?string $supplier, int $lowStockThreshold): int
     {
         $query = "INSERT INTO {$this->table} (name, category, quantity, price, supplier, low_stock_threshold)
@@ -95,6 +106,15 @@ class Part
         $stmt->bindParam(':low_stock_threshold', $lowStockThreshold, PDO::PARAM_INT);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
 
+        return $stmt->execute();
+    }
+
+    public function adjustQuantity(int $id, int $delta): bool
+    {
+        $query = "UPDATE {$this->table} SET quantity = quantity + :delta WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':delta', $delta, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         return $stmt->execute();
     }
 

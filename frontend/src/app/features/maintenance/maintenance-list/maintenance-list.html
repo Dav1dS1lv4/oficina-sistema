@@ -1,0 +1,297 @@
+<nav class="navbar navbar-dark bg-dark px-3">
+  <span class="navbar-brand mb-0 h1">🔧 Oficina</span>
+  <div>
+    <a routerLink="/dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+    <button class="btn btn-outline-light btn-sm" (click)="authService.logout()">Sair</button>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Histórico de Manutenção</h3>
+    @if (canManage()) {
+      <button class="btn btn-primary" (click)="openCreateModal()">+ Nova Manutenção</button>
+    }
+  </div>
+
+  <div class="input-group mb-3" style="max-width: 400px;">
+    <input
+      type="text"
+      class="form-control"
+      placeholder="Pesquisar por matrícula, serviço ou cliente..."
+      [value]="searchTerm()"
+      (input)="searchTerm.set($any($event.target).value)"
+      (keyup.enter)="onSearch()">
+    <button class="btn btn-outline-secondary" (click)="onSearch()">Pesquisar</button>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="alert alert-danger">{{ errorMessage() }}</div>
+  }
+
+  @if (isLoading()) {
+    <div class="text-center my-4">
+      <span class="spinner-border"></span>
+    </div>
+  } @else {
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Data</th>
+            <th>Veículo</th>
+            <th>Cliente</th>
+            <th>Serviço</th>
+            <th>Responsável</th>
+            <th class="text-end">Subtotal</th>
+            <th class="text-end">IVA</th>
+            <th class="text-end">Total</th>
+            <th>Pagamento</th>
+            @if (isAdmin()) {
+              <th class="text-end">Ações</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (record of records(); track record.id) {
+            <tr>
+              <td>{{ record.service_date | date:'dd/MM/yyyy' }}</td>
+              <td>
+                <strong>{{ record.license_plate }}</strong><br>
+                <small class="text-muted">{{ record.brand }} {{ record.model }}</small>
+              </td>
+              <td>{{ record.client_name }}</td>
+              <td>{{ record.type }}</td>
+              <td class="text-muted">{{ record.user_name }}</td>
+              <td class="text-end">{{ record.subtotal | currency:'EUR' }}</td>
+              <td class="text-end">{{ record.tax_amount | currency:'EUR' }}</td>
+              <td class="text-end"><strong>{{ record.total_amount | currency:'EUR' }}</strong></td>
+                            <td>
+                @if (record.payment_reference) {
+                  <a [routerLink]="['/payments', record.payment_reference]" class="text-decoration-none">
+                    {{ record.payment_reference }}
+                  </a>
+                  @if (record.payment_status === 'Pago') {
+                    <span class="badge bg-success ms-1">Pago</span>
+                  } @else {
+                    <span class="badge bg-warning text-dark ms-1">Pendente</span>
+                  }
+                } @else if (canManage()) {
+                  <button
+                    class="btn btn-sm btn-outline-primary"
+                    [disabled]="generatingId() === record.id"
+                    (click)="generatePayment(record)">
+                    Gerar pagamento
+                  </button>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+
+                @if (record.last_cancelled_reference) {
+                  <div class="small mt-1">
+                    <span class="badge bg-danger">Anulado</span>
+                    <a [routerLink]="['/payments', record.last_cancelled_reference]" class="text-muted text-decoration-none">
+                      {{ record.last_cancelled_reference }}
+                    </a>
+                  </div>
+                }
+              </td>
+              @if (isAdmin()) {
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-danger" (click)="deleteRecord(record)">Remover</button>
+                </td>
+              }
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="10" class="text-center text-muted py-4">Nenhuma manutenção registada.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalPages() > 1) {
+      <nav>
+        <ul class="pagination">
+          @for (page of [].constructor(totalPages()); track $index) {
+            <li class="page-item" [class.active]="currentPage() === $index + 1">
+              <button class="page-link" (click)="goToPage($index + 1)">{{ $index + 1 }}</button>
+            </li>
+          }
+        </ul>
+      </nav>
+    }
+  }
+</div>
+
+<!-- Modal Nova Manutenção -->
+@if (showModal()) {
+  <div class="modal-backdrop-custom" (click)="closeModal()">
+    <div class="modal-content-custom" (click)="$event.stopPropagation()">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5>Nova Manutenção</h5>
+        <button class="btn-close" (click)="closeModal()"></button>
+      </div>
+
+      <form [formGroup]="maintenanceForm" (ngSubmit)="onSubmitForm()">
+        @if (modalErrorMessage()) {
+          <div class="alert alert-danger py-2">{{ modalErrorMessage() }}</div>
+        }
+
+        <!-- Veículo (autocomplete) -->
+        <div class="mb-3 position-relative">
+          <label class="form-label">Veículo</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Escreve a matrícula, marca, modelo ou cliente..."
+            [value]="vehicleSearchTerm()"
+            (input)="onVehicleInputChange($any($event.target).value)"
+            (focus)="onVehicleInputFocus()"
+            (blur)="onVehicleInputBlur()"
+            [class.is-invalid]="vehicle_id?.invalid && vehicle_id?.touched"
+            autocomplete="off">
+
+          @if (showVehicleDropdown() && filteredVehicles().length > 0) {
+            <ul class="list-group position-absolute w-100 shadow-sm" style="z-index: 1060; max-height: 200px; overflow-y: auto;">
+              @for (vehicle of filteredVehicles(); track vehicle.id) {
+                <li class="list-group-item list-group-item-action" style="cursor: pointer;" (click)="selectVehicle(vehicle)">
+                  <strong>{{ vehicle.license_plate }}</strong> — {{ vehicle.brand }} {{ vehicle.model }}
+                  <span class="text-muted"> ({{ vehicle.client_name }})</span>
+                </li>
+              }
+            </ul>
+          }
+
+          @if (vehicle_id?.invalid && vehicle_id?.touched) {
+            <div class="invalid-feedback d-block">Seleciona um veículo da lista.</div>
+          }
+        </div>
+
+        <div class="row">
+          <div class="col-md-8 mb-3">
+            <label class="form-label">Tipo de manutenção</label>
+            <input type="text" class="form-control" formControlName="type"
+              placeholder="Ex: Mudança de óleo e filtros"
+              [class.is-invalid]="type?.invalid && type?.touched">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Data</label>
+            <input type="date" class="form-control" formControlName="service_date"
+              [class.is-invalid]="service_date?.invalid && service_date?.touched">
+          </div>
+        </div>
+
+        <!-- Mão de obra: horas x valor/hora -->
+        <h6 class="mb-2">Mão de obra</h6>
+        <div class="row g-2">
+          <div class="col-4">
+            <label class="form-label">Hora de início</label>
+            <input type="time" class="form-control" formControlName="start_time">
+          </div>
+          <div class="col-4">
+            <label class="form-label">Hora de fim</label>
+            <input type="time" class="form-control" formControlName="end_time">
+          </div>
+          <div class="col-4">
+            <label class="form-label">Valor/hora (€)</label>
+            <input type="number" step="0.01" min="0" class="form-control" formControlName="hourly_rate"
+              [class.is-invalid]="hourly_rate?.invalid && hourly_rate?.touched">
+          </div>
+        </div>
+        <div class="small mb-3 mt-1">
+          @if (timeError()) {
+            <span class="text-danger">{{ timeError() }}</span>
+          } @else if (laborMinutes() > 0) {
+            <span class="text-muted">Duração: {{ formatDuration(laborMinutes()) }} → {{ laborTotal() | currency:'EUR' }} (sem IVA)</span>
+          } @else {
+            <span class="text-muted">Sem horas registadas, a mão de obra fica a 0 €.</span>
+          }
+        </div>
+
+        <!-- Peças usadas -->
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0">Peças usadas</h6>
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="addPartLine()">+ Adicionar peça</button>
+        </div>
+
+        <div formArrayName="parts">
+          @for (line of partLines.controls; track $index; let i = $index) {
+            <div class="border rounded p-2 mb-2" [formGroupName]="i">
+              <div class="row g-2 align-items-start">
+                <div class="col-md-5 position-relative">
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    formControlName="name"
+                    placeholder="Nome da peça"
+                    (input)="onPartNameInput(i, $any($event.target).value)"
+                    (focus)="onPartFocus(i)"
+                    (blur)="onPartBlur()"
+                    autocomplete="off">
+
+                  @if (activePartIndex() === i && filteredParts().length > 0) {
+                    <ul class="list-group position-absolute w-100 shadow-sm" style="z-index: 1060; max-height: 160px; overflow-y: auto;">
+                      @for (part of filteredParts(); track part.id) {
+                        <li class="list-group-item list-group-item-action py-1" style="cursor: pointer;" (click)="selectPart(i, part)">
+                          {{ part.name }}
+                          <span class="text-muted"> — stock: {{ part.quantity }}</span>
+                        </li>
+                      }
+                    </ul>
+                  }
+
+                  @if (!line.get('part_id')?.value && line.get('name')?.value) {
+                    <div class="form-text text-warning">Peça nova: será criada com stock negativo.</div>
+                  }
+                </div>
+
+                <div class="col-md-2">
+                  <input type="number" min="1" class="form-control form-control-sm" formControlName="quantity" placeholder="Qtd.">
+                </div>
+
+                <div class="col-md-3">
+                  <input type="number" step="0.01" min="0" class="form-control form-control-sm" formControlName="unit_price" placeholder="Preço un.">
+                </div>
+
+                <div class="col-md-2 text-end">
+                  <button type="button" class="btn btn-sm btn-outline-danger" (click)="removePartLine(i)">✕</button>
+                </div>
+              </div>
+
+              <div class="text-end small text-muted mt-1">
+                Linha: {{ lineTotal(line) | currency:'EUR' }}
+              </div>
+            </div>
+          } @empty {
+            <div class="text-muted small mb-2">Sem peças. Se o serviço foi só mão de obra, podes deixar assim.</div>
+          }
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Notas <span class="text-muted">(opcional)</span></label>
+          <textarea class="form-control" rows="2" formControlName="notes"></textarea>
+        </div>
+
+        <!-- Totais calculados automaticamente -->
+        <div class="bg-light rounded p-3 mb-3">
+          <div class="d-flex justify-content-between"><span>Peças</span><span>{{ partsTotal() | currency:'EUR' }}</span></div>
+          <div class="d-flex justify-content-between"><span>Mão de obra ({{ formatDuration(laborMinutes()) }})</span><span>{{ laborTotal() | currency:'EUR' }}</span></div>
+          <div class="d-flex justify-content-between border-top mt-1 pt-1"><span>Subtotal</span><span>{{ subtotal() | currency:'EUR' }}</span></div>
+          <div class="d-flex justify-content-between"><span>IVA ({{ ivaPercent }}%)</span><span>{{ taxAmount() | currency:'EUR' }}</span></div>
+          <div class="d-flex justify-content-between border-top mt-1 pt-1 fs-5">
+            <strong>Total</strong><strong>{{ totalAmount() | currency:'EUR' }}</strong>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-outline-secondary" (click)="closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSaving()">
+            @if (isSaving()) { A guardar... } @else { Registar manutenção }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

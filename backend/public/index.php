@@ -25,6 +25,8 @@ require_once __DIR__ . '/../src/controllers/UserController.php';
 require_once __DIR__ . '/../src/controllers/ClientController.php';
 require_once __DIR__ . '/../src/controllers/VehicleController.php';
 require_once __DIR__ . '/../src/controllers/PartController.php';
+require_once __DIR__ . '/../src/controllers/MaintenanceController.php';
+require_once __DIR__ . '/../src/controllers/PaymentController.php';
 
 $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $basePath = '/oficina-backend';
@@ -42,6 +44,8 @@ $userController = new UserController($conn);
 $clientController = new ClientController($conn);
 $vehicleController = new VehicleController($conn);
 $partController = new PartController($conn);
+$maintenanceController = new MaintenanceController($conn);
+$paymentController = new PaymentController($conn);
 
 // ============================================
 // ROTEAMENTO
@@ -83,6 +87,22 @@ if ($route === 'api/parts' && $method === 'POST') { $partController->store($inpu
 if (preg_match('#^api/parts/(\d+)$#', $route, $m) && $method === 'GET') { $partController->show((int)$m[1]); exit; }
 if (preg_match('#^api/parts/(\d+)$#', $route, $m) && $method === 'PUT') { $partController->update((int)$m[1], $input); exit; }
 if (preg_match('#^api/parts/(\d+)$#', $route, $m) && $method === 'DELETE') { $partController->destroy((int)$m[1]); exit; }
+
+// --- Manutenção (Módulo 5) ---
+if ($route === 'api/maintenance' && $method === 'GET') { $maintenanceController->index(); exit; }
+if ($route === 'api/maintenance' && $method === 'POST') { $maintenanceController->store($input); exit; }
+if (preg_match('#^api/maintenance/(\d+)$#', $route, $m) && $method === 'GET') { $maintenanceController->show((int)$m[1]); exit; }
+if (preg_match('#^api/maintenance/(\d+)$#', $route, $m) && $method === 'DELETE') { $maintenanceController->destroy((int)$m[1]); exit; }
+if (preg_match('#^api/vehicles/(\d+)/maintenance$#', $route, $m) && $method === 'GET') { $maintenanceController->byVehicle((int)$m[1]); exit; }
+
+// --- Pagamentos ---
+if ($route === 'api/payments' && $method === 'GET') { $paymentController->index(); exit; }
+if ($route === 'api/payments' && $method === 'POST') { $paymentController->store($input); exit; }
+if (preg_match('#^api/payments/ref/([A-Za-z0-9\-]+)$#', $route, $m) && $method === 'GET') { $paymentController->showByReference($m[1]); exit; }
+if (preg_match('#^api/payments/ref/([A-Za-z0-9\-]+)/pay$#', $route, $m) && $method === 'PATCH') { $paymentController->pay($m[1], $input); exit; }
+if (preg_match('#^api/payments/ref/([A-Za-z0-9\-]+)/reopen$#', $route, $m) && $method === 'PATCH') { $paymentController->reopen($m[1]); exit; }
+if (preg_match('#^api/payments/ref/([A-Za-z0-9\-]+)/cancel$#', $route, $m) && $method === 'PATCH') { $paymentController->cancel($m[1], $input); exit; }
+if (preg_match('#^api/maintenance/(\d+)$#', $route, $m) && $method === 'PUT') { $maintenanceController->update((int)$m[1], $input); exit; }
 
 // --- Rota não encontrada ---
 http_response_code(404);

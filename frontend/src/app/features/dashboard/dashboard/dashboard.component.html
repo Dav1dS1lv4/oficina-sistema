@@ -11,12 +11,17 @@
   }
 
   @if (authService.currentUser()?.role === 'Administrador') {
-    <a routerLink="/users" class="btn btn-primary">Gerir Utilizadores</a>
-  }
+  <a routerLink="/users" class="btn btn-primary">Gerir Utilizadores</a>}
+
+  <a routerLink="/clients" class="btn btn-secondary ms-2">Clientes</a>
 
   <a routerLink="/vehicles" class="btn btn-secondary ms-2">Ver Veículos</a>
+
+  <a routerLink="/maintenance" class="btn btn-secondary ms-2">Manutenções</a>
   
   <a routerLink="/parts" class="btn btn-secondary ms-2">Ver Peças</a>
+
+  <a routerLink="/payments" class="btn btn-secondary ms-2">Pagamentos</a>
 
   <p class="text-muted mt-3">
     Os próximos módulos (veículos, peças, manutenção) vão preencher este dashboard com estatísticas reais.
